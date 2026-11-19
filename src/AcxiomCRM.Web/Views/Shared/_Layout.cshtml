@@ -1,0 +1,147 @@
+﻿@using Microsoft.Extensions.Options
+@inject IOptions<SecurityOptions> SecurityOpts
+@inject IOptions<AppOptions> AppOpts
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    string Active(string c, string? a = null) => string.Equals(controller, c, StringComparison.OrdinalIgnoreCase)
+        && (a is null || string.Equals(action, a, StringComparison.OrdinalIgnoreCase)) ? "active" : "";
+    var isAdmin = User.IsInRole(AppRoles.Admin);
+    var isManager = User.IsInRole(AppRoles.Manager);
+    var fullName = User.FindFirst(AppClaimTypes.FullName)?.Value ?? User.Identity?.Name ?? "";
+    var initials = string.Concat(fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpperInvariant(p[0])));
+    var role = isAdmin ? AppRoles.Admin : isManager ? AppRoles.Manager : AppRoles.SalesExecutive;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · AcxiomCRM</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<a class="visually-hidden-focusable position-absolute p-2 bg-white" href="#main">Skip to content</a>
+<div class="app-shell">
+    <aside class="sidebar offcanvas-lg offcanvas-start" id="sidebar" tabindex="-1" aria-label="Main navigation">
+        <div class="d-flex align-items-center justify-content-between">
+            <a class="brand" asp-controller="Home" asp-action="Index"><span class="brand-mark"><i class="bi bi-hexagon-fill" aria-hidden="true"></i></span> AcxiomCRM</a>
+            <button type="button" class="btn-close btn-close-white d-lg-none me-3" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close menu"></button>
+        </div>
+        <nav class="nav-section">
+            <div class="nav-section-title">Overview</div>
+            <a class="nav-link @Active("Home")" asp-controller="Home" asp-action="Index"><i class="bi bi-grid-1x2"></i> Dashboard</a>
+            <div class="nav-section-title">Sales</div>
+            <a class="nav-link @Active("Customers")" asp-controller="Customers" asp-action="Index"><i class="bi bi-building"></i> Customers</a>
+            <a class="nav-link @Active("Leads")" asp-controller="Leads" asp-action="Index"><i class="bi bi-person-lines-fill"></i> Leads</a>
+            <a class="nav-link @(Active("Opportunities") == "active" && action != "Pipeline" ? "active" : "")" asp-controller="Opportunities" asp-action="Index"><i class="bi bi-briefcase"></i> Opportunities</a>
+            <a class="nav-link @Active("Opportunities", "Pipeline")" asp-controller="Opportunities" asp-action="Pipeline"><i class="bi bi-kanban"></i> Sales Pipeline</a>
+            <a class="nav-link @Active("FollowUps")" asp-controller="FollowUps" asp-action="Index" asp-route-view="pending"><i class="bi bi-calendar-check"></i> Follow-Ups</a>
+            <a class="nav-link @Active("Activities")" asp-controller="Activities" asp-action="Index"><i class="bi bi-journal-text"></i> Activities</a>
+            <div class="nav-section-title">Insights</div>
+            <a class="nav-link @Active("Reports")" asp-controller="Reports" asp-action="Index"><i class="bi bi-bar-chart-line"></i> Reports</a>
+            @if (isAdmin || isManager)
+            {
+                <div class="nav-section-title">Administration</div>
+                <a class="nav-link @Active("Users")" asp-controller="Users" asp-action="Index"><i class="bi bi-people"></i> @(isAdmin ? "Users" : "My Team")</a>
+                @if (isAdmin)
+                {
+                    <a class="nav-link @Active("Roles")" asp-controller="Roles" asp-action="Index"><i class="bi bi-shield-check"></i> Roles &amp; Permissions</a>
+                }
+                @if (isAdmin || SecurityOpts.Value.ManagerCanViewAudit)
+                {
+                    <a class="nav-link @Active("AuditLogs")" asp-controller="AuditLogs" asp-action="Index"><i class="bi bi-clock-history"></i> Audit Log</a>
+                }
+            }
+            @if (AppOpts.Value.EnableApiDocs)
+            {
+                <div class="nav-section-title">Developers</div>
+                <a class="nav-link" href="/swagger" target="_blank" rel="noopener"><i class="bi bi-braces"></i> API Docs</a>
+            }
+        </nav>
+        <div class="sidebar-footer">Signed in as <strong class="text-white-50">@AppRoles.DisplayName(role)</strong></div>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <button class="icon-btn d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar" aria-label="Open menu">
+                <i class="bi bi-list" aria-hidden="true"></i>
+            </button>
+            <form class="search position-relative" asp-controller="Search" asp-action="Index" method="get" role="search">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input class="form-control" type="search" name="q" placeholder="Search customers, leads, opportunities…" aria-label="Global search" maxlength="100" value="@Context.Request.Query["q"]" />
+            </form>
+            <div class="ms-auto d-flex align-items-center gap-2">
+                <a class="btn btn-primary btn-sm d-none d-md-inline-flex align-items-center gap-1" asp-controller="FollowUps" asp-action="Create"><i class="bi bi-plus-lg"></i> Follow-up</a>
+                @await Component.InvokeAsync("Notifications")
+                <div class="dropdown">
+                    <button class="btn btn-link text-decoration-none d-flex align-items-center gap-2 p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="avatar">@initials</span>
+                        <span class="d-none d-sm-block text-start lh-sm">
+                            <span class="d-block fw-semibold text-body small">@fullName</span>
+                            <span class="d-block text-body-secondary" style="font-size:.72rem">@AppRoles.DisplayName(role)</span>
+                        </span>
+                        <i class="bi bi-chevron-down small text-body-secondary"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <li><h6 class="dropdown-header">@User.Identity?.Name</h6></li>
+                        <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-key me-2"></i>Change password</a></li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li>
+                            <form asp-controller="Account" asp-action="Logout" method="post">
+                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Sign out</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <main id="main" class="content">
+            @if (TempData["Success"] is string ok)
+            {
+                <div class="alert alert-success alert-dismissible fade show d-flex gap-2 align-items-start" role="status">
+                    <i class="bi bi-check-circle-fill mt-1" aria-hidden="true"></i><div>@ok</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["Error"] is string err)
+            {
+                <div class="alert alert-danger alert-dismissible fade show d-flex gap-2 align-items-start" role="alert">
+                    <i class="bi bi-exclamation-octagon-fill mt-1" aria-hidden="true"></i><div>@err</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @RenderBody()
+        </main>
+        <footer class="app-footer d-flex justify-content-between flex-wrap gap-2">
+            <span>&copy; @Clock.Today.Year AcxiomCRM</span>
+            <span>Times shown in IST · @Fmt.DateTime(Clock.Now)</span>
+        </footer>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h2 class="modal-title fs-5" id="confirmTitle"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Please confirm</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" data-confirm-message>Are you sure?</div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" data-confirm-ok>Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

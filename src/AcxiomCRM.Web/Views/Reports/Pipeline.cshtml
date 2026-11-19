@@ -1,0 +1,38 @@
+@model PipelineReportViewModel
+@{
+    var r = Model.Report;
+    var filterModel = (Model.Filter, Model.Owners, (IReadOnlyList<OptionDto>)Array.Empty<OptionDto>(), string.Empty, "Created", true, false);
+    ViewData["Title"] = "Pipeline report";
+}
+<div class="page-header"><div><div class="crumbs"><a asp-action="Index">Reports</a> / Pipeline</div><h1>Pipeline report</h1><div class="subtitle">Stage-wise and owner-wise pipeline · weighted = amount × probability ÷ 100 · scope: @r.Scope</div></div></div>
+<partial name="_ReportFilter" model="filterModel" />
+<div class="row g-3 mb-3">
+    <div class="col-md-4"><div class="card h-100"><div class="card-body"><div class="kpi-label">Open opportunities</div><div class="kpi-value">@r.OpenCount</div></div></div></div>
+    <div class="col-md-4"><div class="card h-100"><div class="card-body"><div class="kpi-label">Open pipeline</div><div class="kpi-value">@Fmt.Money(r.TotalOpenAmount)</div></div></div></div>
+    <div class="col-md-4"><div class="card h-100"><div class="card-body"><div class="kpi-label">Weighted pipeline</div><div class="kpi-value">@Fmt.Money(r.TotalWeightedAmount)</div></div></div></div>
+</div>
+<script type="application/json" id="pipeline-data">@Html.Raw(Model.ChartJson)</script>
+<div class="row g-3">
+    <div class="col-xl-5">
+        <div class="card h-100"><div class="card-header">Amount by stage</div><div class="card-body"><div class="chart-box"><canvas id="pipelineReportChart" role="img" aria-label="Bar chart of opportunity amount by stage"></canvas></div></div></div>
+    </div>
+    <div class="col-xl-7">
+        <div class="card h-100"><div class="card-header">Stage-wise</div><div class="table-responsive"><table class="table table-crm">
+            <thead><tr><th>Stage</th><th class="num">Count</th><th class="num">Amount</th><th class="num">Weighted</th></tr></thead>
+            <tbody>@foreach (var s in r.Stages) { <tr><td>@Ui.Badge(s.Stage)</td><td class="num">@s.Count</td><td class="num">@Fmt.Money(s.Amount)</td><td class="num">@Fmt.Money(s.WeightedAmount)</td></tr> }</tbody>
+        </table></div></div>
+    </div>
+    <div class="col-12">
+        <div class="card"><div class="card-header">Owner-wise</div><div class="table-responsive"><table class="table table-crm">
+            <thead><tr><th>Owner</th><th class="num">Open deals</th><th class="num">Open amount</th><th class="num">Weighted</th><th class="num">Won</th><th class="num">Won amount</th><th class="num">Lost</th></tr></thead>
+            <tbody>
+            @foreach (var o in r.Owners) { <tr><td class="fw-semibold">@o.OwnerName</td><td class="num">@o.OpenCount</td><td class="num">@Fmt.Money(o.OpenAmount)</td><td class="num">@Fmt.Money(o.WeightedAmount)</td><td class="num">@o.WonCount</td><td class="num">@Fmt.Money(o.WonAmount)</td><td class="num">@o.LostCount</td></tr> }
+            @if (r.Owners.Count == 0) { <tr><td colspan="7"><div class="empty-state">No opportunities in scope.</div></td></tr> }
+            </tbody>
+        </table></div></div>
+    </div>
+</div>
+@section Scripts {
+    <script src="~/lib/chart.js/chart.umd.min.js"></script>
+    <script src="~/js/charts.js" asp-append-version="true"></script>
+}

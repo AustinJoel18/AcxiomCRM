@@ -1,0 +1,48 @@
+@model IReadOnlyList<AuditLogDto>
+@using System.Text.Json
+@functions {
+    static IEnumerable<(string Field, string? Old, string? New)> Changes(AuditLogDto a)
+    {
+        Dictionary<string, JsonElement>? o = null, n = null;
+        try { if (a.OldValue is not null) o = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(a.OldValue); } catch (JsonException) { }
+        try { if (a.NewValue is not null) n = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(a.NewValue); } catch (JsonException) { }
+        if (a.Action is not (AuditAction.Update or AuditAction.StatusChange or AuditAction.Assign or AuditAction.Reschedule or AuditAction.Complete or AuditAction.Convert)) yield break;
+        foreach (var key in (n?.Keys ?? Enumerable.Empty<string>()).Take(6))
+            yield return (key, o is not null && o.TryGetValue(key, out var ov) ? Show(ov) : null, Show(n![key]));
+    }
+    static string? Show(JsonElement e) => e.ValueKind switch
+    {
+        JsonValueKind.Null => "—",
+        JsonValueKind.String => e.GetString() is { Length: > 60 } s ? s[..60] + "…" : e.GetString(),
+        _ => e.ToString()
+    };
+}
+<div class="card">
+    <div class="card-header d-flex align-items-center gap-2"><i class="bi bi-clock-history text-body-secondary"></i> History</div>
+    <div class="card-body">
+        @if (Model.Count == 0)
+        {
+            <p class="text-body-secondary small mb-0">No recorded changes.</p>
+        }
+        else
+        {
+            <ul class="timeline">
+                @foreach (var a in Model)
+                {
+                    <li>
+                        <span class="dot @(a.Result == AuditResult.Failure ? "fail" : "")"></span>
+                        <div class="small fw-semibold">@Fmt.Humanize(a.Action) <span class="fw-normal text-body-secondary">by @(a.UserName ?? "system")</span></div>
+                        <div class="meta">@Fmt.DateTime(Clock.ToLocal(a.CreatedDate))</div>
+                        @if (!string.IsNullOrEmpty(a.Details)) { <div class="small mt-1">@a.Details</div> }
+                        <ul class="change-list">
+                            @foreach (var c in Changes(a))
+                            {
+                                <li><span class="text-body-secondary">@Fmt.Humanize(c.Field):</span> @if (c.Old is not null) { <del class="text-body-secondary">@c.Old</del> <i class="bi bi-arrow-right-short"></i> } <span>@c.New</span></li>
+                            }
+                        </ul>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>

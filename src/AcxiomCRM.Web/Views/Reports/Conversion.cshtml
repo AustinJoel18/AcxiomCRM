@@ -1,0 +1,30 @@
+@model ConversionReportViewModel
+@{
+    var r = Model.Report;
+    var filterModel = (Model.Filter, Model.Owners, (IReadOnlyList<OptionDto>)Array.Empty<OptionDto>(), string.Empty, "Period", true, false);
+    ViewData["Title"] = "Sales / conversion report";
+}
+<div class="page-header"><div><div class="crumbs"><a asp-action="Index">Reports</a> / Conversion</div><h1>Sales / conversion report</h1><div class="subtitle">Leads by creation date; opportunity outcomes by close date · scope: @r.Scope</div></div></div>
+<partial name="_ReportFilter" model="filterModel" />
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="kpi-label">Lead conversion rate</div><div class="kpi-value">@Fmt.Percent(r.ConversionRate)</div><div class="kpi-sub">@r.ConvertedLeads of @r.TotalLeads leads converted</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="kpi-label">Not converted</div><div class="kpi-value">@(r.TotalLeads - r.ConvertedLeads)</div><div class="kpi-sub">@r.OpenLeads open · @r.LostLeads lost · @r.UnqualifiedLeads unqualified</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="kpi-label">Win rate</div><div class="kpi-value">@Fmt.Percent(r.WinRate)</div><div class="kpi-sub">@r.WonOpportunities won · @r.LostOpportunities lost</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="kpi-label">Won revenue</div><div class="kpi-value">@Fmt.MoneyShort(r.WonAmount)</div><div class="kpi-sub">Avg deal @Fmt.MoneyShort(r.AverageDealSize)</div></div></div></div>
+</div>
+<div class="row g-3">
+    @foreach (var (title, rows) in new[] { ("By lead source", r.BySource), ("By owner", r.ByOwner) })
+    {
+        <div class="col-xl-6"><div class="card h-100"><div class="card-header">@title</div><div class="table-responsive"><table class="table table-crm">
+            <thead><tr><th>@(title.EndsWith("source") ? "Source" : "Owner")</th><th class="num">Leads</th><th class="num">Converted</th><th class="num">Lost</th><th class="num">Conversion</th></tr></thead>
+            <tbody>
+            @foreach (var b in rows)
+            {
+                <tr><td class="fw-semibold">@b.Label</td><td class="num">@b.Total</td><td class="num">@b.Converted</td><td class="num">@b.Lost</td>
+                    <td class="num"><div class="d-flex align-items-center justify-content-end gap-2"><div class="progress flex-grow-1" style="height:6px;max-width:90px" role="progressbar" aria-label="Conversion" aria-valuenow="@b.ConversionRate" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width:@b.ConversionRate.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></div></div>@Fmt.Percent(b.ConversionRate)</div></td></tr>
+            }
+            @if (rows.Count == 0) { <tr><td colspan="5"><div class="empty-state">No leads in this period.</div></td></tr> }
+            </tbody>
+        </table></div></div></div>
+    }
+</div>

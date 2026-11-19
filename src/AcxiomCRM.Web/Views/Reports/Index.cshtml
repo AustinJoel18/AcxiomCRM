@@ -1,0 +1,20 @@
+@model IReadOnlyList<ReportLink>
+@{ ViewData["Title"] = "Reports"; }
+<div class="page-header"><div><h1>Reports</h1><div class="subtitle">Every report respects your role: Sales Executives see their own data, Managers their team, Admins everything.</div></div></div>
+<div class="row g-3">
+    @foreach (var r in Model)
+    {
+        <div class="col-md-6 col-xl-4">
+            <a class="kpi-link" asp-action="@r.Action">
+                <div class="card h-100"><div class="card-body kpi">
+                    <span class="kpi-icon tone-blue"><i class="bi @r.Icon"></i></span>
+                    <div>
+                        <div class="fw-semibold">@r.Title</div>
+                        <div class="small text-body-secondary">@r.Description</div>
+                        <div class="small mt-2"><span class="badge badge-soft-secondary">@r.Access</span></div>
+                    </div>
+                </div></div>
+            </a>
+        </div>
+    }
+</div>

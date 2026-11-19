@@ -1,0 +1,90 @@
+@model ListPageViewModel<OpportunityDto, OpportunityQuery>
+@{
+    ViewData["Title"] = "Opportunities";
+    var q = Model.Query;
+}
+<div class="page-header">
+    <div>
+        <h1>Opportunities</h1>
+        <div class="subtitle">@Model.Results.TotalCount.ToString("N0") opportunities · scope: @Model.Scope</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-primary" asp-action="Pipeline"><i class="bi bi-kanban me-1"></i>Pipeline board</a>
+        <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg me-1"></i>New opportunity</a>
+    </div>
+</div>
+
+<form method="get" class="filter-bar row g-2 align-items-end" role="search">
+    <div class="col-md-4">
+        <label class="form-label" for="search">Search</label>
+        <input id="search" name="search" value="@q.Search" class="form-control" placeholder="Opportunity or customer name" maxlength="100" />
+    </div>
+    <div class="col-6 col-md-2">
+        <label class="form-label" for="stage">Stage</label>
+        <select id="stage" name="stage" class="form-select" data-autosubmit asp-items="Ui.EnumOptions(q.Stage)"><option value="">All</option></select>
+    </div>
+    <div class="col-6 col-md-2">
+        <label class="form-label" for="status">Status</label>
+        <select id="status" name="status" class="form-select" data-autosubmit asp-items="Ui.EnumOptions(q.Status)"><option value="">All</option></select>
+    </div>
+    <div class="col-6 col-md-2">
+        <label class="form-label" for="assignedToId">Owner</label>
+        <select id="assignedToId" name="assignedToId" class="form-select" data-autosubmit asp-items="Model.Owners"><option value="">Anyone</option></select>
+    </div>
+    <div class="col-6 col-md-2 d-flex gap-2">
+        <button class="btn btn-outline-primary flex-fill" type="submit"><i class="bi bi-search"></i> Filter</button>
+        <a class="btn btn-light" asp-action="Index" title="Clear filters"><i class="bi bi-x-lg"></i></a>
+    </div>
+    <input type="hidden" name="sort" value="@q.Sort" /><input type="hidden" name="dir" value="@q.Dir" />
+    @if (q.CustomerId is { } cid) { <input type="hidden" name="customerId" value="@cid" /> }
+</form>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-crm">
+            <thead>
+            <tr>
+                <th><a crm-sort="name">Opportunity</a></th>
+                <th><a crm-sort="customer">Customer</a></th>
+                <th><a crm-sort="stage">Stage</a></th>
+                <th class="num"><a crm-sort="amount">Amount</a></th>
+                <th class="num"><a crm-sort="probability">Prob.</a></th>
+                <th class="num">Weighted</th>
+                <th><a crm-sort="close">Close date</a></th>
+                <th><a crm-sort="owner">Owner</a></th>
+                <th class="text-end">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var o in Model.Results.Items)
+            {
+                var stale = o.Status == OpportunityStatus.Open && o.ExpectedCloseDate < Clock.Today;
+                <tr>
+                    <td><a class="row-title" asp-action="Details" asp-route-id="@o.OpportunityId">@o.OpportunityName</a></td>
+                    <td><a class="text-body" asp-controller="Customers" asp-action="Details" asp-route-id="@o.CustomerId">@o.CustomerName</a></td>
+                    <td>@Ui.Badge(o.Stage)</td>
+                    <td class="num">@Fmt.Money(o.Amount)</td>
+                    <td class="num">@o.Probability%</td>
+                    <td class="num text-body-secondary">@Fmt.Money(o.WeightedAmount)</td>
+                    <td class="small text-nowrap">@Fmt.Date(o.ExpectedCloseDate) @if (stale) { <i class="bi bi-exclamation-circle text-danger" data-bs-toggle="tooltip" title="Close date has passed — update it"></i> }</td>
+                    <td>@o.AssignedToName</td>
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-light" asp-action="Edit" asp-route-id="@o.OpportunityId" title="Edit" aria-label="Edit @o.OpportunityName"><i class="bi bi-pencil"></i></a>
+                        @if (Model.CanDelete)
+                        {
+                            <form asp-action="Delete" asp-route-id="@o.OpportunityId" method="post" class="d-inline" data-confirm="Delete opportunity @o.OpportunityName?">
+                                <button class="btn btn-sm btn-light text-danger" type="submit" title="Delete" aria-label="Delete @o.OpportunityName"><i class="bi bi-trash"></i></button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            @if (Model.Results.TotalCount == 0)
+            {
+                <tr><td colspan="9"><div class="empty-state"><i class="bi bi-briefcase"></i>No opportunities match your filters.</div></td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+<crm-pager page="@Model.Results.Page" page-size="@Model.Results.PageSize" total-count="@Model.Results.TotalCount" />

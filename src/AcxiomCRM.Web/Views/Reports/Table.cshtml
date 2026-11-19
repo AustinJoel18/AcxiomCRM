@@ -1,0 +1,43 @@
+@model ReportPageViewModel
+@{
+    var t = Model.Table;
+    ViewData["Title"] = t.Title;
+}
+<div class="page-header">
+    <div><div class="crumbs"><a asp-action="Index">Reports</a> / @t.Title</div><h1>@t.Title</h1><div class="subtitle">@t.Description · scope: @t.Scope</div></div>
+    <a class="btn btn-outline-secondary" href="@(Context.Request.Path + Microsoft.AspNetCore.Http.QueryString.Create(Context.Request.Query.Where(q => q.Key != "export").Select(q => new KeyValuePair<string, string?>(q.Key, q.Value.ToString())).Append(new("export", "csv"))))"><i class="bi bi-filetype-csv me-1"></i>Export CSV</a>
+</div>
+<partial name="_ReportFilter" model="(Model.Filter, Model.Owners, t.StatusOptions, t.StatusLabel, t.DateLabel, t.ShowOwnerFilter, true)" />
+@if (t.Summary.Count > 0)
+{
+    <div class="row g-3 mb-3">
+        @foreach (var s in t.Summary)
+        {
+            <div class="col-6 col-md"><div class="card h-100"><div class="card-body py-3"><div class="kpi-label">@s.Key</div><div class="kpi-value fs-4">@s.Value</div></div></div></div>
+        }
+    </div>
+}
+<div class="card"><div class="table-responsive">
+    <table class="table table-crm">
+        <thead><tr>
+            @foreach (var c in t.Columns)
+            {
+                <th class="@(c.Numeric ? "num" : "")">@if (c.Sortable) { <a crm-sort="@c.Key">@c.Header</a> } else { @c.Header }</th>
+            }
+        </tr></thead>
+        <tbody>
+        @foreach (var row in t.Rows)
+        {
+            <tr>
+                @for (var i = 0; i < row.Length; i++)
+                {
+                    var col = t.Columns[i];
+                    <td class="@(col.Numeric ? "num" : "") small">@if (col.Header is "Status" or "Stage" or "Result") { @Ui.Badge(row[i]) } else { @row[i] }</td>
+                }
+            </tr>
+        }
+        @if (t.TotalCount == 0) { <tr><td colspan="@t.Columns.Count"><div class="empty-state"><i class="bi bi-bar-chart"></i>No data for the selected filters.</div></td></tr> }
+        </tbody>
+    </table>
+</div></div>
+<crm-pager page="@t.Page" page-size="@t.PageSize" total-count="@t.TotalCount" />

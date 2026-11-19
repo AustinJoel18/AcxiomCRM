@@ -1,0 +1,89 @@
+@model OpportunityFormViewModel
+@{
+    var isEdit = Model.OpportunityId is not null;
+    ViewData["Title"] = isEdit ? "Edit opportunity" : "New opportunity";
+}
+<div class="page-header">
+    <div>
+        <div class="crumbs"><a asp-action="Index">Opportunities</a> / @(isEdit ? $"#{Model.OpportunityId}" : "New")</div>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+</div>
+<form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@Model.OpportunityId" method="post" novalidate>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    <div class="row g-3">
+        <div class="col-xl-8">
+            <div class="card"><div class="card-body">
+                <h2 class="form-section-title">Deal</h2>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label asp-for="OpportunityName" class="form-label"></label><span class="req">*</span>
+                        <input asp-for="OpportunityName" class="form-control" maxlength="150" />
+                        <span asp-validation-for="OpportunityName"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="CustomerId" class="form-label"></label><span class="req">*</span>
+                        <select asp-for="CustomerId" class="form-select" asp-items="Model.Customers"><option value="">Select a customer…</option></select>
+                        <span asp-validation-for="CustomerId"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="LeadId" class="form-label"></label>
+                        <select asp-for="LeadId" class="form-select" asp-items="Model.Leads"><option value="">None</option></select>
+                        <span asp-validation-for="LeadId"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Amount" class="form-label"></label><span class="req">*</span>
+                        <div class="input-group"><span class="input-group-text">₹</span><input asp-for="Amount" class="form-control" type="number" step="0.01" min="0" /></div>
+                        <span asp-validation-for="Amount"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Probability" class="form-label"></label><span class="req">*</span>
+                        <div class="input-group"><input asp-for="Probability" class="form-control" type="number" id="Probability" /><span class="input-group-text">%</span></div>
+                        <span asp-validation-for="Probability"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="ExpectedCloseDate" class="form-label"></label><span class="req">*</span>
+                        <input asp-for="ExpectedCloseDate" class="form-control" />
+                        <div class="form-text">Cannot be in the past while the deal is active.</div>
+                        <span asp-validation-for="ExpectedCloseDate"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Notes" class="form-label"></label>
+                        <textarea asp-for="Notes" class="form-control" rows="3" maxlength="2000"></textarea>
+                        <span asp-validation-for="Notes"></span>
+                    </div>
+                </div>
+            </div></div>
+        </div>
+        <div class="col-xl-4">
+            <div class="card"><div class="card-body">
+                <h2 class="form-section-title">Pipeline</h2>
+                <div class="mb-3">
+                    <label asp-for="Stage" class="form-label"></label><span class="req">*</span>
+                    <select asp-for="Stage" class="form-select" asp-items="Model.StageOptions" data-probability-target="#Probability"></select>
+                    <div class="form-text">Won sets probability to 100%, Lost to 0%. Closed deals cannot be reopened.</div>
+                    <span asp-validation-for="Stage"></span>
+                </div>
+                <div class="mb-3" id="closeReasonGroup">
+                    <label asp-for="CloseReason" class="form-label"></label>
+                    <textarea asp-for="CloseReason" class="form-control" rows="2" maxlength="500" placeholder="Final outcome (required when Lost)"></textarea>
+                    <span asp-validation-for="CloseReason"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Source" class="form-label"></label>
+                    <select asp-for="Source" class="form-select" asp-items="Ui.EnumOptions<LeadSource>()"><option value="">—</option></select>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="AssignedToId" class="form-label"></label>
+                    <select asp-for="AssignedToId" class="form-select" asp-items="Model.Owners"></select>
+                    <span asp-validation-for="AssignedToId"></span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save opportunity</button>
+                    <a class="btn btn-light" asp-action="@(isEdit ? "Details" : "Index")" asp-route-id="@Model.OpportunityId">Cancel</a>
+                </div>
+            </div></div>
+        </div>
+    </div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

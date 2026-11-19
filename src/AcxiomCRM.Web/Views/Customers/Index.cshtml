@@ -1,0 +1,81 @@
+@model ListPageViewModel<CustomerDto, CustomerQuery>
+@{
+    ViewData["Title"] = "Customers";
+    var q = Model.Query;
+}
+<div class="page-header">
+    <div>
+        <h1>Customers</h1>
+        <div class="subtitle">@Model.Results.TotalCount.ToString("N0") customers · scope: @Model.Scope</div>
+    </div>
+    <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg me-1"></i>New customer</a>
+</div>
+
+<form method="get" class="filter-bar row g-2 align-items-end" role="search">
+    <div class="col-md-5">
+        <label class="form-label" for="search">Search</label>
+        <input id="search" name="search" value="@q.Search" class="form-control" placeholder="Name, email, phone, company or code" maxlength="100" />
+    </div>
+    <div class="col-6 col-md-2">
+        <label class="form-label" for="status">Status</label>
+        <select id="status" name="status" class="form-select" data-autosubmit asp-items="Ui.EnumOptions(q.Status)">
+            <option value="">All</option>
+        </select>
+    </div>
+    <div class="col-6 col-md-3">
+        <label class="form-label" for="assignedToId">Owner</label>
+        <select id="assignedToId" name="assignedToId" class="form-select" data-autosubmit asp-items="Model.Owners"><option value="">Anyone</option></select>
+    </div>
+    <div class="col-md-2 d-flex gap-2">
+        <button class="btn btn-outline-primary flex-fill" type="submit"><i class="bi bi-search"></i> Filter</button>
+        <a class="btn btn-light" asp-action="Index" title="Clear filters"><i class="bi bi-x-lg"></i></a>
+    </div>
+    <input type="hidden" name="sort" value="@q.Sort" /><input type="hidden" name="dir" value="@q.Dir" />
+</form>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-crm">
+            <thead>
+            <tr>
+                <th><a crm-sort="code">Code</a></th>
+                <th><a crm-sort="name">Customer</a></th>
+                <th><a crm-sort="company">Company</a></th>
+                <th><a crm-sort="email">Contact</a></th>
+                <th><a crm-sort="status">Status</a></th>
+                <th><a crm-sort="owner">Owner</a></th>
+                <th><a crm-sort="created">Created</a></th>
+                <th class="text-end">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var c in Model.Results.Items)
+            {
+                <tr>
+                    <td class="text-body-secondary small">@c.CustomerCode</td>
+                    <td><a class="row-title" asp-action="Details" asp-route-id="@c.CustomerId">@c.CustomerName</a><div class="row-sub">@c.City</div></td>
+                    <td>@c.CompanyName</td>
+                    <td><div class="small">@c.Email</div><div class="row-sub">@c.Phone</div></td>
+                    <td>@Ui.Badge(c.Status)</td>
+                    <td>@c.AssignedToName</td>
+                    <td class="text-nowrap small">@Fmt.Date(Clock.ToLocal(c.CreatedDate))</td>
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-light" asp-action="Edit" asp-route-id="@c.CustomerId" title="Edit" aria-label="Edit @c.CustomerName"><i class="bi bi-pencil"></i></a>
+                        @if (Model.CanDelete)
+                        {
+                            <form asp-action="Delete" asp-route-id="@c.CustomerId" method="post" class="d-inline" data-confirm="Delete customer @c.CustomerName? The record will be deactivated and kept in the audit history.">
+                                <button class="btn btn-sm btn-light text-danger" type="submit" title="Delete" aria-label="Delete @c.CustomerName"><i class="bi bi-trash"></i></button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            @if (Model.Results.TotalCount == 0)
+            {
+                <tr><td colspan="8"><div class="empty-state"><i class="bi bi-building"></i>No customers match your filters.</div></td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+<crm-pager page="@Model.Results.Page" page-size="@Model.Results.PageSize" total-count="@Model.Results.TotalCount" />

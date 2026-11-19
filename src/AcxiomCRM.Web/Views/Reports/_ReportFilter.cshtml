@@ -1,0 +1,26 @@
+@model (ReportFilter Filter, IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> Owners, IReadOnlyList<OptionDto> StatusOptions, string StatusLabel, string DateLabel, bool ShowOwner, bool AllowExport)
+@{ var f = Model.Filter; }
+<form method="get" class="filter-bar row g-2 align-items-end" role="search">
+    <div class="col-6 col-md-2"><label class="form-label" for="from">@Model.DateLabel from</label><input id="from" name="from" type="date" class="form-control" value="@f.From?.ToString("yyyy-MM-dd")" /></div>
+    <div class="col-6 col-md-2"><label class="form-label" for="to">To</label><input id="to" name="to" type="date" class="form-control" value="@f.To?.ToString("yyyy-MM-dd")" /></div>
+    @if (Model.StatusOptions.Count > 0)
+    {
+        <div class="col-6 col-md-2"><label class="form-label" for="status">@Model.StatusLabel</label>
+            <select id="status" name="status" class="form-select"><option value="">All</option>
+                @foreach (var o in Model.StatusOptions) { <option value="@o.Value" selected="@(o.Value == f.Status)">@o.Text</option> }
+            </select></div>
+    }
+    @if (Model.ShowOwner)
+    {
+        <div class="col-6 col-md-2"><label class="form-label" for="ownerId">Owner / user</label><select id="ownerId" name="ownerId" class="form-select" asp-items="Model.Owners"><option value="">Anyone</option></select></div>
+    }
+    <div class="col-md-2"><label class="form-label" for="search">Search</label><input id="search" name="search" value="@f.Search" class="form-control" maxlength="100" /></div>
+    <div class="col-md-2 d-flex gap-1">
+        <button class="btn btn-primary flex-fill" type="submit"><i class="bi bi-funnel"></i> Apply</button>
+        @if (Model.AllowExport)
+        {
+            <button class="btn btn-outline-secondary" type="submit" name="export" value="csv" title="Export CSV"><i class="bi bi-download"></i></button>
+        }
+    </div>
+    <input type="hidden" name="sort" value="@f.Sort" /><input type="hidden" name="dir" value="@f.Dir" />
+</form>

@@ -1,0 +1,18 @@
+@model SearchViewModel
+@{ ViewData["Title"] = "Search"; }
+<div class="page-header"><div><h1>Search</h1><div class="subtitle">@(Model.Q is null ? "Search across customers, leads and opportunities you can access." : $"Results for “{Model.Q}”")</div></div></div>
+<form method="get" class="filter-bar d-flex gap-2" role="search"><input name="q" value="@Model.Q" class="form-control" placeholder="Search…" maxlength="100" autofocus /><button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button></form>
+@if (Model.Q is not null)
+{
+    <div class="row g-3">
+        <div class="col-xl-4"><div class="card h-100"><div class="card-header"><i class="bi bi-building me-1"></i>Customers <span class="badge badge-soft-secondary">@Model.Customers.Count</span></div>
+            <div class="list-group list-group-flush">@foreach (var c in Model.Customers) { <a class="list-group-item list-group-item-action" asp-controller="Customers" asp-action="Details" asp-route-id="@c.CustomerId"><div class="fw-semibold">@c.CustomerName</div><div class="row-sub">@c.CompanyName · @c.Email</div></a> }
+            @if (Model.Customers.Count == 0) { <div class="empty-state py-3">No customers.</div> }</div></div></div>
+        <div class="col-xl-4"><div class="card h-100"><div class="card-header"><i class="bi bi-person-lines-fill me-1"></i>Leads <span class="badge badge-soft-secondary">@Model.Leads.Count</span></div>
+            <div class="list-group list-group-flush">@foreach (var l in Model.Leads) { <a class="list-group-item list-group-item-action" asp-controller="Leads" asp-action="Details" asp-route-id="@l.LeadId"><div class="fw-semibold">@l.LeadName @Ui.Badge(l.Status)</div><div class="row-sub">@(l.CompanyName ?? l.LeadCode)</div></a> }
+            @if (Model.Leads.Count == 0) { <div class="empty-state py-3">No leads.</div> }</div></div></div>
+        <div class="col-xl-4"><div class="card h-100"><div class="card-header"><i class="bi bi-briefcase me-1"></i>Opportunities <span class="badge badge-soft-secondary">@Model.Opportunities.Count</span></div>
+            <div class="list-group list-group-flush">@foreach (var o in Model.Opportunities) { <a class="list-group-item list-group-item-action" asp-controller="Opportunities" asp-action="Details" asp-route-id="@o.OpportunityId"><div class="fw-semibold">@o.OpportunityName</div><div class="row-sub">@o.CustomerName · @Fmt.Money(o.Amount) · @o.Stage</div></a> }
+            @if (Model.Opportunities.Count == 0) { <div class="empty-state py-3">No opportunities.</div> }</div></div></div>
+    </div>
+}

@@ -1,0 +1,53 @@
+@model IReadOnlyList<OpportunityDto>
+@{
+    ViewData["Title"] = "Sales pipeline";
+    var stages = Enum.GetValues<OpportunityStage>();
+    var owners = (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Owners"]!;
+}
+<div class="page-header">
+    <div>
+        <h1>Sales pipeline</h1>
+        <div class="subtitle">Open deals by stage, plus deals closed in the last 90 days.</div>
+    </div>
+    <form method="get" class="d-flex gap-2 align-items-center">
+        <label class="small text-body-secondary" for="ownerId">Owner</label>
+        <select id="ownerId" name="ownerId" class="form-select form-select-sm" data-autosubmit asp-items="owners"><option value="">Everyone</option></select>
+        <a class="btn btn-sm btn-primary text-nowrap" asp-action="Create"><i class="bi bi-plus-lg"></i> New</a>
+    </form>
+</div>
+<div class="board">
+    @foreach (var stage in stages)
+    {
+        var deals = Model.Where(o => o.Stage == stage).ToList();
+        <section class="board-col" aria-label="@stage">
+            <div class="d-flex justify-content-between align-items-baseline">
+                <h2>@Ui.Badge(stage) <span class="ms-1 text-body-secondary fw-normal">@deals.Count</span></h2>
+                <span class="board-total">@Fmt.MoneyShort(deals.Sum(d => d.Amount))</span>
+            </div>
+            @foreach (var o in deals)
+            {
+                <article class="deal">
+                    <a class="title" asp-action="Details" asp-route-id="@o.OpportunityId">@o.OpportunityName</a>
+                    <div class="row-sub">@o.CustomerName</div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span class="amount">@Fmt.MoneyShort(o.Amount)</span>
+                        <span class="small text-body-secondary">@o.Probability% · @Fmt.Date(o.ExpectedCloseDate)</span>
+                    </div>
+                    <div class="small text-body-secondary mt-1"><i class="bi bi-person"></i> @o.AssignedToName</div>
+                    @if (OpportunityRules.IsActive(o.Stage))
+                    {
+                        <form asp-action="ChangeStage" asp-route-id="@o.OpportunityId" asp-route-returnTo="pipeline" method="post" class="mt-2">
+                            <label class="visually-hidden" for="stage-@o.OpportunityId">Move @o.OpportunityName to stage</label>
+                            <select id="stage-@o.OpportunityId" name="StageChange.Stage" class="form-select form-select-sm" data-autosubmit>
+                                <option value="">Move to…</option>
+                                @foreach (var s in stages.Where(s => s != o.Stage && s != OpportunityStage.Lost)) { <option value="@s">@s</option> }
+                            </select>
+                        </form>
+                    }
+                </article>
+            }
+            @if (deals.Count == 0) { <div class="text-center small text-body-secondary mt-4">No deals</div> }
+        </section>
+    }
+</div>
+<p class="small text-body-secondary mt-2"><i class="bi bi-info-circle"></i> To mark a deal Lost, open it and record the reason. Moving to an active stage requires a close date that is not in the past.</p>

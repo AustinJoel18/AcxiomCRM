@@ -1,0 +1,32 @@
+@model IReadOnlyList<FollowUpDto>
+@{ var relatedKey = ViewData["RelatedKey"] as string; }
+<div class="card">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-calendar-check text-body-secondary me-1"></i> Follow-ups</span>
+        <a class="btn btn-sm btn-outline-primary" asp-controller="FollowUps" asp-action="Create" asp-route-relatedKey="@relatedKey"><i class="bi bi-plus-lg"></i> Schedule</a>
+    </div>
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state py-4"><i class="bi bi-calendar"></i>No follow-ups yet.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-crm">
+                <thead><tr><th>Date</th><th>Subject</th><th>Type</th><th>Status</th><th>Assigned</th></tr></thead>
+                <tbody>
+                @foreach (var f in Model)
+                {
+                    <tr>
+                        <td class="text-nowrap">@Fmt.DateTime(f.FollowUpDate)</td>
+                        <td><a class="row-title" asp-controller="FollowUps" asp-action="Details" asp-route-id="@f.FollowUpId">@f.Subject</a></td>
+                        <td><i class="bi @Ui.Icon(f.FollowUpType) me-1 text-body-secondary"></i>@f.FollowUpType</td>
+                        <td>@if (f.IsOverdue) { @Ui.Badge("Overdue") } else { @Ui.Badge(f.Status) }</td>
+                        <td>@f.AssignedToName</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

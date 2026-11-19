@@ -1,0 +1,66 @@
+@model UserDetailsViewModel
+@{
+    var u = Model.User;
+    ViewData["Title"] = u.FullName;
+}
+<div class="page-header">
+    <div class="d-flex align-items-center gap-3">
+        <span class="avatar avatar-lg">@string.Concat(u.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => p[0]))</span>
+        <div>
+            <div class="crumbs"><a asp-action="Index">Users</a> / @u.Email</div>
+            <h1 class="d-flex align-items-center gap-2">@u.FullName @Ui.Badge(u.IsActive ? "Active" : "Inactive") @if (u.IsLockedOut) { <span class="badge badge-soft-danger"><i class="bi bi-lock-fill me-1"></i>Locked</span> }</h1>
+            <div class="subtitle">@AppRoles.DisplayName(u.Role)@(u.ManagerName is null ? "" : $" · reports to {u.ManagerName}")</div>
+        </div>
+    </div>
+    @if (Model.CanManage)
+    {
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-primary" asp-action="Edit" asp-route-id="@u.Id"><i class="bi bi-pencil me-1"></i>Edit</a>
+            @if (u.IsLockedOut)
+            {
+                <form asp-action="Unlock" asp-route-id="@u.Id" method="post"><button class="btn btn-outline-success" type="submit"><i class="bi bi-unlock me-1"></i>Unlock</button></form>
+            }
+            @if (!Model.IsSelf)
+            {
+                <form asp-action="SetActive" asp-route-id="@u.Id" asp-route-active="@(!u.IsActive)" method="post"
+                      data-confirm="@(u.IsActive ? $"Deactivate {u.FullName}? They will be signed out and unable to sign in." : $"Activate {u.FullName}?")"
+                      data-confirm-button="@(u.IsActive ? "Deactivate" : "Activate")" data-confirm-class="@(u.IsActive ? "btn-danger" : "btn-success")">
+                    <button class="btn @(u.IsActive ? "btn-outline-danger" : "btn-outline-success")" type="submit"><i class="bi @(u.IsActive ? "bi-person-x" : "bi-person-check") me-1"></i>@(u.IsActive ? "Deactivate" : "Activate")</button>
+                </form>
+            }
+        </div>
+    }
+</div>
+<div class="row g-3">
+    <div class="col-xl-8 d-flex flex-column gap-3">
+        <div class="card"><div class="card-body">
+            <dl class="dl-grid">
+                <div><dt>Email / username</dt><dd>@u.Email</dd></div>
+                <div><dt>Phone</dt><dd>@(u.PhoneNumber ?? "—")</dd></div>
+                <div><dt>Role</dt><dd>@AppRoles.DisplayName(u.Role)</dd></div>
+                <div><dt>Reporting manager</dt><dd>@(u.ManagerName ?? "—")</dd></div>
+                <div><dt>Account status</dt><dd>@(u.IsActive ? "Active" : "Inactive")</dd></div>
+                <div><dt>Lockout</dt><dd>@(u.IsLockedOut ? $"Locked until {Fmt.DateTime(Clock.ToLocal(u.LockoutEnd!.Value.UtcDateTime))}" : "Not locked")</dd></div>
+                <div><dt>Failed sign-in attempts</dt><dd>@u.FailedLoginCount</dd></div>
+                <div><dt>Password change pending</dt><dd>@(u.MustChangePassword ? "Yes" : "No")</dd></div>
+                <div><dt>Last sign-in</dt><dd>@(u.LastLoginDate is { } ll ? Fmt.DateTime(Clock.ToLocal(ll)) : "Never")</dd></div>
+                <div><dt>Created</dt><dd>@Fmt.DateTime(Clock.ToLocal(u.CreatedDate))</dd></div>
+            </dl>
+        </div></div>
+        @if (Model.CanManage)
+        {
+            <div class="card"><div class="card-body">
+                <h2 class="form-section-title"><i class="bi bi-key me-1"></i>Reset password</h2>
+                <form asp-action="ResetPassword" asp-route-id="@u.Id" method="post" class="row g-2 align-items-end" novalidate>
+                    <div class="col-md-4"><label asp-for="ResetPassword.NewPassword" class="form-label"></label><input asp-for="ResetPassword.NewPassword" class="form-control" autocomplete="new-password" /><span asp-validation-for="ResetPassword.NewPassword"></span></div>
+                    <div class="col-md-4"><label asp-for="ResetPassword.ConfirmPassword" class="form-label"></label><input asp-for="ResetPassword.ConfirmPassword" class="form-control" autocomplete="new-password" /><span asp-validation-for="ResetPassword.ConfirmPassword"></span></div>
+                    <div class="col-md-4"><button class="btn btn-outline-primary w-100" type="submit">Reset password</button></div>
+                    <div class="col-12"><div class="form-check"><input asp-for="ResetPassword.RequireChange" class="form-check-input" /><label asp-for="ResetPassword.RequireChange" class="form-check-label small"></label></div>
+                        <div class="form-text">Resetting also clears the lockout. The new password is never stored in plain text or written to logs.</div></div>
+                </form>
+            </div></div>
+        }
+    </div>
+    <div class="col-xl-4"><partial name="_History" model="Model.History" /></div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -1,0 +1,94 @@
+@model ListPageViewModel<FollowUpDto, FollowUpQuery>
+@{
+    ViewData["Title"] = "Follow-ups";
+    var q = Model.Query;
+    var view = q.View ?? "";
+    var related = (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["RelatedOptions"]!;
+    (string Key, string Label, string Icon)[] tabs = [("pending", "Pending", "bi-hourglass"), ("overdue", "Overdue", "bi-exclamation-circle"), ("today", "Due today", "bi-calendar-day"), ("upcoming", "Upcoming", "bi-calendar-week"), ("", "All", "bi-list-ul")];
+}
+<div class="page-header">
+    <div>
+        <h1>Follow-ups</h1>
+        <div class="subtitle">Scheduled calls, meetings, emails and visits · scope: @Model.Scope</div>
+    </div>
+    <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg me-1"></i>Schedule follow-up</a>
+</div>
+
+<ul class="nav nav-pills mb-3 gap-1">
+    @foreach (var t in tabs)
+    {
+        <li class="nav-item"><a class="nav-link @(view == t.Key ? "active" : "")" asp-action="Index" asp-route-view="@t.Key" asp-route-assignedToId="@q.AssignedToId"><i class="bi @t.Icon me-1"></i>@t.Label</a></li>
+    }
+</ul>
+
+<form method="get" class="filter-bar row g-2 align-items-end" role="search">
+    <input type="hidden" name="view" value="@q.View" />
+    <div class="col-md-3">
+        <label class="form-label" for="search">Search</label>
+        <input id="search" name="search" value="@q.Search" class="form-control" placeholder="Subject, remarks or related record" maxlength="100" />
+    </div>
+    <div class="col-6 col-md-2">
+        <label class="form-label" for="status">Status</label>
+        <select id="status" name="status" class="form-select" asp-items="Ui.EnumOptions(q.Status)"><option value="">All</option></select>
+    </div>
+    <div class="col-6 col-md-2">
+        <label class="form-label" for="assignedToId">Assigned user</label>
+        <select id="assignedToId" name="assignedToId" class="form-select" asp-items="Model.Owners"><option value="">Anyone</option></select>
+    </div>
+    <div class="col-6 col-md-2">
+        <label class="form-label" for="related">Related customer/lead</label>
+        <select id="related" name="related" class="form-select" asp-items="related"><option value="">Any</option></select>
+    </div>
+    <div class="col-3 col-md-1">
+        <label class="form-label" for="dateFrom">From</label>
+        <input id="dateFrom" name="dateFrom" type="date" class="form-control px-1" value="@q.DateFrom?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="col-3 col-md-1">
+        <label class="form-label" for="dateTo">To</label>
+        <input id="dateTo" name="dateTo" type="date" class="form-control px-1" value="@q.DateTo?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="col-md-1 d-flex gap-1">
+        <button class="btn btn-outline-primary flex-fill" type="submit" title="Filter"><i class="bi bi-search"></i></button>
+        <a class="btn btn-light" asp-action="Index" asp-route-view="@q.View" title="Clear filters"><i class="bi bi-x-lg"></i></a>
+    </div>
+</form>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-crm">
+            <thead>
+            <tr>
+                <th><a crm-sort="date">Date</a></th>
+                <th><a crm-sort="subject">Subject</a></th>
+                <th><a crm-sort="type">Type</a></th>
+                <th>Related to</th>
+                <th><a crm-sort="status">Status</a></th>
+                <th><a crm-sort="owner">Assigned</a></th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var f in Model.Results.Items)
+            {
+                <tr>
+                    <td class="text-nowrap @(f.IsOverdue ? "text-danger fw-semibold" : "")">@Fmt.DateTime(f.FollowUpDate)</td>
+                    <td><a class="row-title" asp-action="Details" asp-route-id="@f.FollowUpId">@f.Subject</a>@if (!string.IsNullOrEmpty(f.Remarks)) { <div class="row-sub text-truncate" style="max-width:280px">@f.Remarks</div> }</td>
+                    <td><i class="bi @Ui.Icon(f.FollowUpType) me-1 text-body-secondary"></i>@f.FollowUpType</td>
+                    <td>
+                        @if (f.RelatedType is { } rt)
+                        {
+                            <i class="bi @Ui.Icon(rt) text-body-secondary me-1" title="@rt"></i><a class="text-body" asp-controller="@Ui.RelatedController(rt)" asp-action="Details" asp-route-id="@f.RelatedId">@f.RelatedName</a>
+                        }
+                    </td>
+                    <td>@if (f.IsOverdue) { @Ui.Badge("Overdue") } else { @Ui.Badge(f.Status) }</td>
+                    <td>@f.AssignedToName</td>
+                </tr>
+            }
+            @if (Model.Results.TotalCount == 0)
+            {
+                <tr><td colspan="6"><div class="empty-state"><i class="bi bi-calendar2-check"></i>Nothing here — no follow-ups match.</div></td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+<crm-pager page="@Model.Results.Page" page-size="@Model.Results.PageSize" total-count="@Model.Results.TotalCount" />

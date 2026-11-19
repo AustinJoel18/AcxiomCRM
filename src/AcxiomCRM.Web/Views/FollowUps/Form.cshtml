@@ -1,0 +1,66 @@
+@model FollowUpFormViewModel
+@{
+    var isEdit = Model.FollowUpId is not null;
+    ViewData["Title"] = isEdit ? "Edit follow-up" : "Schedule follow-up";
+}
+<div class="page-header">
+    <div>
+        <div class="crumbs"><a asp-action="Index" asp-route-view="pending">Follow-ups</a> / @(isEdit ? $"#{Model.FollowUpId}" : "New")</div>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+</div>
+<div class="row"><div class="col-xl-8">
+<form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@Model.FollowUpId" method="post" novalidate>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    <div class="card"><div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label asp-for="Subject" class="form-label"></label><span class="req">*</span>
+                <input asp-for="Subject" class="form-control" maxlength="200" placeholder="e.g. Discuss revised proposal" />
+                <span asp-validation-for="Subject"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="FollowUpType" class="form-label"></label><span class="req">*</span>
+                <select asp-for="FollowUpType" class="form-select" asp-items="Ui.EnumOptions<FollowUpType>()"></select>
+                <span asp-validation-for="FollowUpType"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="FollowUpDate" class="form-label"></label><span class="req">*</span>
+                @if (isEdit)
+                {
+                    <input class="form-control" value="@Fmt.DateTime(Model.FollowUpDate)" readonly aria-describedby="dateHelp" />
+                    <div id="dateHelp" class="form-text">Use <strong>Reschedule</strong> on the follow-up page to change the date.</div>
+                }
+                else
+                {
+                    <input asp-for="FollowUpDate" class="form-control" type="datetime-local" min="@Clock.Today.ToString("yyyy-MM-dd")T00:00" />
+                    <div class="form-text">Cannot be earlier than today.</div>
+                    <span asp-validation-for="FollowUpDate"></span>
+                }
+            </div>
+            <div class="col-md-6">
+                <label asp-for="AssignedToId" class="form-label"></label>
+                <select asp-for="AssignedToId" class="form-select" asp-items="Model.Owners"></select>
+                <span asp-validation-for="AssignedToId"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="RelatedKey" class="form-label"></label><span class="req">*</span>
+                <select asp-for="RelatedKey" class="form-select" asp-items="Model.RelatedOptions" required data-val="true" data-val-required="Select the customer, lead or opportunity this follow-up is for.">
+                    <option value="">Select a customer, lead or opportunity…</option>
+                </select>
+                <span asp-validation-for="RelatedKey"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Remarks" class="form-label"></label>
+                <textarea asp-for="Remarks" class="form-control" rows="3" maxlength="1000"></textarea>
+                <span asp-validation-for="Remarks"></span>
+            </div>
+        </div>
+        <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>@(isEdit ? "Save changes" : "Schedule")</button>
+            <a class="btn btn-light" asp-action="@(isEdit ? "Details" : "Index")" asp-route-id="@Model.FollowUpId">Cancel</a>
+        </div>
+    </div></div>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

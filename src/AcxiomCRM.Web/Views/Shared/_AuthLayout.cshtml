@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · AcxiomCRM</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="auth-wrap">
+    <section class="auth-hero" aria-hidden="true">
+        <div class="d-flex align-items-center gap-2 fw-bold fs-5 text-white"><span class="brand-mark"><i class="bi bi-hexagon-fill"></i></span> AcxiomCRM</div>
+        <div>
+            <h2>Every lead, deal and follow-up — in one secure workspace.</h2>
+            <ul>
+                <li><i class="bi bi-check-circle-fill"></i> Lead-to-customer conversion workflow</li>
+                <li><i class="bi bi-check-circle-fill"></i> Weighted sales pipeline &amp; dashboards</li>
+                <li><i class="bi bi-check-circle-fill"></i> Role-based access for Admins, Managers &amp; Sales</li>
+                <li><i class="bi bi-check-circle-fill"></i> Full audit trail of security &amp; business events</li>
+            </ul>
+        </div>
+        <div class="small opacity-75">&copy; @Clock.Today.Year AcxiomCRM</div>
+    </section>
+    <main class="auth-panel">
+        <div class="auth-card">
+            @RenderBody()
+        </div>
+    </main>
+</div>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

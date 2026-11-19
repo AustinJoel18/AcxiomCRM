@@ -1,0 +1,94 @@
+@model FollowUpDetailsViewModel
+@{
+    var f = Model.FollowUp;
+    ViewData["Title"] = f.Subject;
+    var planned = f.Status == FollowUpStatus.Planned;
+    var canReschedule = FollowUpRules.CanReschedule(f.Status);
+}
+<div class="page-header">
+    <div>
+        <div class="crumbs"><a asp-action="Index" asp-route-view="pending">Follow-ups</a> / #@f.FollowUpId</div>
+        <h1 class="d-flex align-items-center gap-2 flex-wrap"><i class="bi @Ui.Icon(f.FollowUpType) text-primary"></i>@f.Subject @if (f.IsOverdue) { @Ui.Badge("Overdue") } else { @Ui.Badge(f.Status) }</h1>
+        <div class="subtitle">@f.FollowUpType · @Fmt.DateTime(f.FollowUpDate) · Assigned to @f.AssignedToName</div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (f.Status is not (FollowUpStatus.Completed or FollowUpStatus.Cancelled))
+        {
+            <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@f.FollowUpId"><i class="bi bi-pencil me-1"></i>Edit</a>
+        }
+        @if (planned)
+        {
+            <form asp-action="Missed" asp-route-id="@f.FollowUpId" method="post" data-confirm="Mark this follow-up as missed?" data-confirm-button="Mark missed" data-confirm-class="btn-warning">
+                <button class="btn btn-outline-warning" type="submit"><i class="bi bi-calendar-x me-1"></i>Missed</button>
+            </form>
+        }
+        @if (FollowUpRules.CanCancel(f.Status))
+        {
+            <form asp-action="Cancel" asp-route-id="@f.FollowUpId" method="post" data-confirm="Cancel this follow-up?" data-confirm-button="Cancel follow-up">
+                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-x-circle me-1"></i>Cancel</button>
+            </form>
+        }
+        @if (Model.CanDelete)
+        {
+            <form asp-action="Delete" asp-route-id="@f.FollowUpId" method="post" data-confirm="Delete this follow-up?">
+                <button class="btn btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
+            </form>
+        }
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-8 d-flex flex-column gap-3">
+        <div class="card"><div class="card-body">
+            <dl class="dl-grid">
+                <div><dt>Related to</dt><dd>@if (f.RelatedType is { } rt) { <i class="bi @Ui.Icon(rt) me-1"></i><a asp-controller="@Ui.RelatedController(rt)" asp-action="Details" asp-route-id="@f.RelatedId">@f.RelatedName</a> <span class="text-body-secondary small">(@rt)</span> } else { <span>—</span> }</dd></div>
+                <div><dt>Scheduled for</dt><dd>@Fmt.DateTime(f.FollowUpDate)</dd></div>
+                <div><dt>Type</dt><dd>@f.FollowUpType</dd></div>
+                <div><dt>Assigned to</dt><dd>@f.AssignedToName</dd></div>
+                <div><dt>Created</dt><dd>@Fmt.DateTime(Clock.ToLocal(f.CreatedDate))</dd></div>
+                @if (f.CompletedDate is { } done) { <div><dt>Completed</dt><dd>@Fmt.DateTime(Clock.ToLocal(done))</dd></div> }
+            </dl>
+            @if (!string.IsNullOrEmpty(f.Remarks)) { <hr /><div class="small text-body-secondary fw-semibold mb-1">REMARKS</div><p class="mb-0" style="white-space:pre-line">@f.Remarks</p> }
+            @if (!string.IsNullOrEmpty(f.Outcome)) { <hr /><div class="small text-body-secondary fw-semibold mb-1">OUTCOME</div><p class="mb-0" style="white-space:pre-line">@f.Outcome</p> }
+        </div></div>
+
+        @if (planned || canReschedule)
+        {
+            <div class="row g-3">
+                @if (planned)
+                {
+                    <div class="col-md-6">
+                        <div class="card h-100"><div class="card-body">
+                            <h2 class="form-section-title"><i class="bi bi-check2-circle text-success me-1"></i>Complete</h2>
+                            <form asp-action="Complete" asp-route-id="@f.FollowUpId" method="post" novalidate>
+                                <label asp-for="Complete.Outcome" class="form-label"></label><span class="req">*</span>
+                                <textarea asp-for="Complete.Outcome" class="form-control mb-1" rows="3" maxlength="1000" placeholder="What was discussed and agreed?"></textarea>
+                                <span asp-validation-for="Complete.Outcome"></span>
+                                <div class="form-text mb-2">Logs an activity on the related record@(f.RelatedType == RelatedRecordType.Lead ? " and moves a New lead to Contacted" : "").</div>
+                                <button class="btn btn-success btn-sm" type="submit">Mark completed</button>
+                            </form>
+                        </div></div>
+                    </div>
+                }
+                @if (canReschedule)
+                {
+                    <div class="col-md-6">
+                        <div class="card h-100"><div class="card-body">
+                            <h2 class="form-section-title"><i class="bi bi-calendar-event text-primary me-1"></i>Reschedule</h2>
+                            <form asp-action="Reschedule" asp-route-id="@f.FollowUpId" method="post" novalidate>
+                                <label asp-for="Reschedule.NewDate" class="form-label"></label><span class="req">*</span>
+                                <input asp-for="Reschedule.NewDate" class="form-control mb-1" type="datetime-local" min="@Clock.Today.ToString("yyyy-MM-dd")T00:00" />
+                                <span asp-validation-for="Reschedule.NewDate"></span>
+                                <label asp-for="Reschedule.Reason" class="form-label mt-2"></label>
+                                <input asp-for="Reschedule.Reason" class="form-control mb-2" maxlength="500" />
+                                <button class="btn btn-primary btn-sm" type="submit">Reschedule</button>
+                            </form>
+                        </div></div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+    <div class="col-xl-4"><partial name="_History" model="Model.History" /></div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

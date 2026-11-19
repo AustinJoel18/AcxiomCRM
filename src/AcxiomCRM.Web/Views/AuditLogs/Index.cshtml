@@ -1,0 +1,40 @@
+@model AuditIndexViewModel
+@{
+    ViewData["Title"] = "Audit log";
+    var q = Model.Query;
+}
+<div class="page-header">
+    <div><h1>Audit log</h1><div class="subtitle">Append-only record of security and business events@(Model.Limited ? " · limited view: your team's business events" : "").</div></div>
+    @if (!Model.Limited) { <a class="btn btn-outline-primary" asp-controller="Reports" asp-action="Audit"><i class="bi bi-download me-1"></i>Audit report / export</a> }
+</div>
+<form method="get" class="filter-bar row g-2 align-items-end" role="search">
+    <div class="col-md-3"><label class="form-label" for="search">Search</label><input id="search" name="search" value="@q.Search" class="form-control" placeholder="User, details, IP or record id" maxlength="100" /></div>
+    <div class="col-6 col-md-2"><label class="form-label" for="userId">User</label><select id="userId" name="userId" class="form-select" asp-items="Model.Users"><option value="">Anyone</option></select></div>
+    <div class="col-6 col-md-2"><label class="form-label" for="module">Module</label><select id="module" name="module" class="form-select" asp-items="Ui.EnumOptions(q.Module)"><option value="">All</option></select></div>
+    <div class="col-6 col-md-2"><label class="form-label" for="action">Action</label><select id="action" name="action" class="form-select" asp-items="Ui.EnumOptions(q.Action)"><option value="">All</option></select></div>
+    <div class="col-3 col-md-1"><label class="form-label" for="dateFrom">From</label><input id="dateFrom" name="dateFrom" type="date" class="form-control px-1" value="@q.DateFrom?.ToString("yyyy-MM-dd")" /></div>
+    <div class="col-3 col-md-1"><label class="form-label" for="dateTo">To</label><input id="dateTo" name="dateTo" type="date" class="form-control px-1" value="@q.DateTo?.ToString("yyyy-MM-dd")" /></div>
+    <div class="col-md-1 d-flex gap-1"><button class="btn btn-outline-primary flex-fill" type="submit"><i class="bi bi-search"></i></button><a class="btn btn-light" asp-action="Index"><i class="bi bi-x-lg"></i></a></div>
+</form>
+<div class="card"><div class="table-responsive">
+    <table class="table table-crm">
+        <thead><tr><th><a crm-sort="date">Timestamp</a></th><th><a crm-sort="user">User</a></th><th><a crm-sort="module">Module</a></th><th><a crm-sort="action">Action</a></th><th>Record</th><th>Result</th><th>Details</th><th>IP</th></tr></thead>
+        <tbody>
+        @foreach (var a in Model.Results.Items)
+        {
+            <tr>
+                <td class="text-nowrap small"><a asp-action="Details" asp-route-id="@a.AuditLogId">@Fmt.DateTime(Clock.ToLocal(a.CreatedDate))</a></td>
+                <td class="small">@(a.UserName ?? "—")</td>
+                <td class="small">@a.Module</td>
+                <td class="small fw-semibold">@Fmt.Humanize(a.Action)</td>
+                <td class="small text-nowrap">@(a.EntityName is null ? "—" : $"{a.EntityName} #{(a.RecordId?.Length > 8 ? a.RecordId[..8] + "…" : a.RecordId)}")</td>
+                <td>@Ui.Badge(a.Result)</td>
+                <td class="small text-truncate" style="max-width:320px" title="@a.Details">@a.Details</td>
+                <td class="small text-body-secondary">@a.IpAddress</td>
+            </tr>
+        }
+        @if (Model.Results.TotalCount == 0) { <tr><td colspan="8"><div class="empty-state"><i class="bi bi-clock-history"></i>No audit entries match.</div></td></tr> }
+        </tbody>
+    </table>
+</div></div>
+<crm-pager page="@Model.Results.Page" page-size="@Model.Results.PageSize" total-count="@Model.Results.TotalCount" />

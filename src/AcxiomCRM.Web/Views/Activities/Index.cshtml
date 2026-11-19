@@ -1,0 +1,86 @@
+@model ListPageViewModel<ActivityDto, ActivityQuery>
+@{
+    ViewData["Title"] = "Activities";
+    var q = Model.Query;
+}
+<div class="page-header">
+    <div>
+        <h1>Activities</h1>
+        <div class="subtitle">Calls, meetings, emails and tasks · scope: @Model.Scope</div>
+    </div>
+    <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-plus-lg me-1"></i>Log activity</button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            @foreach (var t in Enum.GetValues<ActivityType>())
+            {
+                <li><a class="dropdown-item" asp-action="Create" asp-route-type="@t"><i class="bi @Ui.Icon(t) me-2"></i>@t</a></li>
+            }
+        </ul>
+    </div>
+</div>
+
+<form method="get" class="filter-bar row g-2 align-items-end" role="search">
+    <div class="col-md-3">
+        <label class="form-label" for="search">Search</label>
+        <input id="search" name="search" value="@q.Search" class="form-control" placeholder="Subject or description" maxlength="100" />
+    </div>
+    <div class="col-6 col-md-2">
+        <label class="form-label" for="type">Activity type</label>
+        <select id="type" name="type" class="form-select" data-autosubmit asp-items="Ui.EnumOptions(q.Type)"><option value="">All</option></select>
+    </div>
+    <div class="col-6 col-md-2">
+        <label class="form-label" for="status">Status</label>
+        <select id="status" name="status" class="form-select" data-autosubmit asp-items="Ui.EnumOptions(q.Status)"><option value="">All</option></select>
+    </div>
+    <div class="col-6 col-md-2">
+        <label class="form-label" for="assignedToId">Assigned user</label>
+        <select id="assignedToId" name="assignedToId" class="form-select" data-autosubmit asp-items="Model.Owners"><option value="">Anyone</option></select>
+    </div>
+    <div class="col-3 col-md-1">
+        <label class="form-label" for="dateFrom">From</label>
+        <input id="dateFrom" name="dateFrom" type="date" class="form-control px-1" value="@q.DateFrom?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="col-3 col-md-1">
+        <label class="form-label" for="dateTo">To</label>
+        <input id="dateTo" name="dateTo" type="date" class="form-control px-1" value="@q.DateTo?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="col-md-1 d-flex gap-1">
+        <button class="btn btn-outline-primary flex-fill" type="submit" title="Filter"><i class="bi bi-search"></i></button>
+        <a class="btn btn-light" asp-action="Index" title="Clear filters"><i class="bi bi-x-lg"></i></a>
+    </div>
+</form>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-crm">
+            <thead>
+            <tr>
+                <th><a crm-sort="date">Date</a></th>
+                <th><a crm-sort="type">Type</a></th>
+                <th><a crm-sort="subject">Subject</a></th>
+                <th>Related to</th>
+                <th><a crm-sort="status">Status</a></th>
+                <th><a crm-sort="owner">Assigned</a></th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var a in Model.Results.Items)
+            {
+                <tr>
+                    <td class="text-nowrap small">@Fmt.DateTime(a.ActivityDate)</td>
+                    <td><i class="bi @Ui.Icon(a.ActivityType) me-1 text-body-secondary"></i>@a.ActivityType</td>
+                    <td><a class="row-title" asp-action="Details" asp-route-id="@a.ActivityId">@a.Subject</a></td>
+                    <td>@if (a.RelatedType is { } rt) { <a class="text-body" asp-controller="@Ui.RelatedController(rt)" asp-action="Details" asp-route-id="@a.RelatedId"><i class="bi @Ui.Icon(rt) text-body-secondary me-1"></i>@a.RelatedName</a> } else { <span class="text-body-secondary">—</span> }</td>
+                    <td>@Ui.Badge(a.Status)</td>
+                    <td>@a.AssignedToName</td>
+                </tr>
+            }
+            @if (Model.Results.TotalCount == 0)
+            {
+                <tr><td colspan="6"><div class="empty-state"><i class="bi bi-journal"></i>No activities match your filters.</div></td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+<crm-pager page="@Model.Results.Page" page-size="@Model.Results.PageSize" total-count="@Model.Results.TotalCount" />

@@ -1,0 +1,46 @@
+@model LoginViewModel
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+@{
+    ViewData["Title"] = "Sign in";
+    Layout = "_AuthLayout";
+}
+<h1 class="h3 fw-bold mb-1">Welcome back</h1>
+<p class="text-body-secondary mb-4">Sign in to continue to AcxiomCRM.</p>
+
+<form asp-action="Login" method="post" novalidate>
+    <input type="hidden" asp-for="ReturnUrl" />
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+    <div class="mb-3">
+        <label asp-for="UserNameOrEmail" class="form-label"></label>
+        <input asp-for="UserNameOrEmail" class="form-control form-control-lg" autocomplete="username" autofocus />
+        <span asp-validation-for="UserNameOrEmail"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Password" class="form-label"></label>
+        <input asp-for="Password" class="form-control form-control-lg" autocomplete="current-password" />
+        <span asp-validation-for="Password"></span>
+    </div>
+    <div class="form-check mb-3">
+        <input asp-for="RememberMe" class="form-check-input" />
+        <label asp-for="RememberMe" class="form-check-label small"></label>
+    </div>
+    <button type="submit" class="btn btn-primary btn-lg w-100">Sign in</button>
+</form>
+
+@if (ViewData["AllowRegistration"] is true)
+{
+    <p class="text-center small mt-3 mb-0">New to AcxiomCRM? <a asp-action="Register">Create an account</a></p>
+}
+
+@if (Env.IsDevelopment())
+{
+    <div class="demo-accounts mt-4">
+        <div class="fw-semibold mb-1"><i class="bi bi-info-circle me-1"></i>Demo accounts (development only)</div>
+        <div><code>admin@acxiomcrm.local</code> — Admin</div>
+        <div><code>manager@acxiomcrm.local</code> — Manager</div>
+        <div><code>sales@acxiomcrm.local</code> — Sales Executive</div>
+        <div class="text-body-secondary mt-1">Password: the <code>Seed:DemoPassword</code> value in appsettings.Development.json</div>
+    </div>
+}
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

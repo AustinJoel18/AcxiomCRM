@@ -1,0 +1,92 @@
+@model ListPageViewModel<LeadDto, LeadQuery>
+@{
+    ViewData["Title"] = "Leads";
+    var q = Model.Query;
+}
+<div class="page-header">
+    <div>
+        <h1>Leads</h1>
+        <div class="subtitle">@Model.Results.TotalCount.ToString("N0") leads · scope: @Model.Scope</div>
+    </div>
+    <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg me-1"></i>New lead</a>
+</div>
+
+<form method="get" class="filter-bar row g-2 align-items-end" role="search">
+    <div class="col-md-4">
+        <label class="form-label" for="search">Search</label>
+        <input id="search" name="search" value="@q.Search" class="form-control" placeholder="Lead name, company, email or phone" maxlength="100" />
+    </div>
+    <div class="col-6 col-md-2">
+        <label class="form-label" for="status">Status</label>
+        <select id="status" name="status" class="form-select" data-autosubmit asp-items="Ui.EnumOptions(q.Status)"><option value="">All</option></select>
+    </div>
+    <div class="col-6 col-md-2">
+        <label class="form-label" for="source">Source</label>
+        <select id="source" name="source" class="form-select" data-autosubmit asp-items="Ui.EnumOptions(q.Source)"><option value="">All</option></select>
+    </div>
+    <div class="col-6 col-md-2">
+        <label class="form-label" for="assignedToId">Assigned user</label>
+        <select id="assignedToId" name="assignedToId" class="form-select" data-autosubmit asp-items="Model.Owners"><option value="">Anyone</option></select>
+    </div>
+    <div class="col-6 col-md-2 d-flex gap-2">
+        <button class="btn btn-outline-primary flex-fill" type="submit"><i class="bi bi-search"></i> Filter</button>
+        <a class="btn btn-light" asp-action="Index" title="Clear filters"><i class="bi bi-x-lg"></i></a>
+    </div>
+    <input type="hidden" name="sort" value="@q.Sort" /><input type="hidden" name="dir" value="@q.Dir" />
+</form>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-crm">
+            <thead>
+            <tr>
+                <th><a crm-sort="code">Code</a></th>
+                <th><a crm-sort="name">Lead</a></th>
+                <th><a crm-sort="source">Source</a></th>
+                <th><a crm-sort="status">Status</a></th>
+                <th><a crm-sort="priority">Priority</a></th>
+                <th class="num"><a crm-sort="value">Expected</a></th>
+                <th><a crm-sort="owner">Assigned</a></th>
+                <th><a crm-sort="created">Created</a></th>
+                <th class="text-end">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var l in Model.Results.Items)
+            {
+                <tr>
+                    <td class="text-body-secondary small">@l.LeadCode</td>
+                    <td><a class="row-title" asp-action="Details" asp-route-id="@l.LeadId">@l.LeadName</a><div class="row-sub">@(l.CompanyName ?? l.Email)</div></td>
+                    <td class="small">@Fmt.Humanize(l.Source)</td>
+                    <td>@Ui.Badge(l.Status)</td>
+                    <td>@Ui.Badge(l.Priority)</td>
+                    <td class="num">@Fmt.Money(l.ExpectedValue)</td>
+                    <td>@l.AssignedToName</td>
+                    <td class="small text-nowrap">@Fmt.Date(Clock.ToLocal(l.CreatedDate))</td>
+                    <td class="text-end text-nowrap">
+                        @if (l.CanConvert)
+                        {
+                            <a class="btn btn-sm btn-light text-success" asp-action="Convert" asp-route-id="@l.LeadId" title="Convert"><i class="bi bi-arrow-right-circle"></i></a>
+                        }
+                        @if (l.Status != LeadStatus.Converted)
+                        {
+                            <a class="btn btn-sm btn-light" asp-action="Edit" asp-route-id="@l.LeadId" title="Edit" aria-label="Edit @l.LeadName"><i class="bi bi-pencil"></i></a>
+                        }
+                        @if (Model.CanDelete && l.Status != LeadStatus.Converted)
+                        {
+                            <form asp-action="Delete" asp-route-id="@l.LeadId" method="post" class="d-inline" data-confirm="Delete lead @l.LeadName?">
+                                <button class="btn btn-sm btn-light text-danger" type="submit" title="Delete" aria-label="Delete @l.LeadName"><i class="bi bi-trash"></i></button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            @if (Model.Results.TotalCount == 0)
+            {
+                <tr><td colspan="9"><div class="empty-state"><i class="bi bi-person-lines-fill"></i>No leads match your filters.</div></td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+<crm-pager page="@Model.Results.Page" page-size="@Model.Results.PageSize" total-count="@Model.Results.TotalCount" />

@@ -1,0 +1,28 @@
+@model AuditLogDto
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Audit entry";
+    static string Pretty(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return "—";
+        try { return JsonSerializer.Serialize(JsonDocument.Parse(json).RootElement, new JsonSerializerOptions { WriteIndented = true }); }
+        catch (JsonException) { return json; }
+    }
+}
+<div class="page-header"><div><div class="crumbs"><a asp-action="Index">Audit log</a> / #@Model.AuditLogId</div><h1 class="d-flex gap-2 align-items-center">@Fmt.Humanize(Model.Action) @Ui.Badge(Model.Result)</h1><div class="subtitle">@Model.Module · @Fmt.DateTime(Clock.ToLocal(Model.CreatedDate))</div></div></div>
+<div class="card mb-3"><div class="card-body">
+    <dl class="dl-grid">
+        <div><dt>User</dt><dd>@(Model.UserName ?? "—")</dd></div>
+        <div><dt>User id</dt><dd class="small">@(Model.UserId ?? "—")</dd></div>
+        <div><dt>Entity</dt><dd>@(Model.EntityName ?? "—")</dd></div>
+        <div><dt>Record id</dt><dd class="small">@(Model.RecordId ?? "—")</dd></div>
+        <div><dt>IP address</dt><dd>@(Model.IpAddress ?? "—")</dd></div>
+        <div><dt>Timestamp (UTC)</dt><dd>@Model.CreatedDate.ToString("yyyy-MM-dd HH:mm:ss")</dd></div>
+    </dl>
+    @if (!string.IsNullOrEmpty(Model.Details)) { <hr /><p class="mb-0">@Model.Details</p> }
+    @if (!string.IsNullOrEmpty(Model.UserAgent)) { <p class="small text-body-secondary mt-2 mb-0">@Model.UserAgent</p> }
+</div></div>
+<div class="row g-3">
+    <div class="col-md-6"><div class="card h-100"><div class="card-header">Old value</div><div class="card-body"><pre class="json-block mb-0">@Pretty(Model.OldValue)</pre></div></div></div>
+    <div class="col-md-6"><div class="card h-100"><div class="card-header">New value</div><div class="card-body"><pre class="json-block mb-0">@Pretty(Model.NewValue)</pre></div></div></div>
+</div>

@@ -1,0 +1,53 @@
+@model ListPageViewModel<UserDto, UserQuery>
+@{
+    ViewData["Title"] = "Users";
+    var q = Model.Query;
+    var canManage = ViewData["CanManage"] is true;
+}
+<div class="page-header">
+    <div>
+        <h1>@(canManage ? "Users" : "My team")</h1>
+        <div class="subtitle">@Model.Results.TotalCount users · @(canManage ? "Create users, assign roles, manage status and lockout." : "Read-only view of your team.")</div>
+    </div>
+    @if (canManage) { <a class="btn btn-primary" asp-action="Create"><i class="bi bi-person-plus me-1"></i>New user</a> }
+</div>
+<form method="get" class="filter-bar row g-2 align-items-end" role="search">
+    <div class="col-md-5"><label class="form-label" for="search">Search</label><input id="search" name="search" value="@q.Search" class="form-control" placeholder="Name or email" maxlength="100" /></div>
+    <div class="col-6 col-md-3"><label class="form-label" for="role">Role</label>
+        <select id="role" name="role" class="form-select" data-autosubmit>
+            <option value="">All roles</option>
+            @foreach (var r in AppRoles.All) { <option value="@r" selected="@(q.Role == r)">@AppRoles.DisplayName(r)</option> }
+        </select></div>
+    <div class="col-6 col-md-2"><label class="form-label" for="state">Status</label>
+        <select id="state" name="state" class="form-select" data-autosubmit>
+            <option value="">All</option>
+            <option value="active" selected="@(q.State == "active")">Active</option>
+            <option value="inactive" selected="@(q.State == "inactive")">Inactive</option>
+            <option value="locked" selected="@(q.State == "locked")">Locked out</option>
+        </select></div>
+    <div class="col-md-2 d-flex gap-2"><button class="btn btn-outline-primary flex-fill" type="submit"><i class="bi bi-search"></i> Filter</button><a class="btn btn-light" asp-action="Index"><i class="bi bi-x-lg"></i></a></div>
+</form>
+<div class="card"><div class="table-responsive">
+    <table class="table table-crm">
+        <thead><tr><th><a crm-sort="name">User</a></th><th>Role</th><th>Manager</th><th>Status</th><th>Lockout</th><th><a crm-sort="login">Last sign-in</a></th><th><a crm-sort="created">Created</a></th></tr></thead>
+        <tbody>
+        @foreach (var u in Model.Results.Items)
+        {
+            <tr>
+                <td class="d-flex align-items-center gap-2">
+                    <span class="avatar">@string.Concat(u.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => p[0]))</span>
+                    <span><a class="row-title" asp-action="Details" asp-route-id="@u.Id">@u.FullName</a><span class="row-sub d-block">@u.Email</span></span>
+                </td>
+                <td>@AppRoles.DisplayName(u.Role)</td>
+                <td>@(u.ManagerName ?? "—")</td>
+                <td>@Ui.Badge(u.IsActive ? "Active" : "Inactive")</td>
+                <td>@if (u.IsLockedOut) { <span class="badge badge-soft-danger"><i class="bi bi-lock-fill me-1"></i>Locked</span> } else if (u.FailedLoginCount > 0) { <span class="small text-body-secondary">@u.FailedLoginCount failed</span> } else { <span class="small text-body-secondary">—</span> }</td>
+                <td class="small">@(u.LastLoginDate is { } ll ? Fmt.DateTime(Clock.ToLocal(ll)) : "Never")</td>
+                <td class="small">@Fmt.Date(Clock.ToLocal(u.CreatedDate))</td>
+            </tr>
+        }
+        @if (Model.Results.TotalCount == 0) { <tr><td colspan="7"><div class="empty-state">No users found.</div></td></tr> }
+        </tbody>
+    </table>
+</div></div>
+<crm-pager page="@Model.Results.Page" page-size="@Model.Results.PageSize" total-count="@Model.Results.TotalCount" />

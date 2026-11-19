@@ -1,0 +1,40 @@
+@model UserFormViewModel
+@using Microsoft.Extensions.Options
+@inject IOptions<SecurityOptions> Sec
+@{
+    var isEdit = Model.Id is not null;
+    ViewData["Title"] = isEdit ? "Edit user" : "New user";
+    var p = Sec.Value.Password;
+}
+<div class="page-header"><div><div class="crumbs"><a asp-action="Index">Users</a> / @(isEdit ? Model.Email : "New")</div><h1>@ViewData["Title"]</h1></div></div>
+<div class="row"><div class="col-xl-8">
+<form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@Model.Id" method="post" novalidate>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+    <div class="card"><div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6"><label asp-for="FullName" class="form-label"></label><span class="req">*</span><input asp-for="FullName" class="form-control" /><span asp-validation-for="FullName"></span></div>
+            <div class="col-md-6"><label asp-for="Email" class="form-label"></label><span class="req">*</span><input asp-for="Email" class="form-control" type="email" autocomplete="off" /><div class="form-text">Also used as the username.</div><span asp-validation-for="Email"></span></div>
+            <div class="col-md-6"><label asp-for="PhoneNumber" class="form-label"></label><input asp-for="PhoneNumber" class="form-control" type="tel" /><span asp-validation-for="PhoneNumber"></span></div>
+            <div class="col-md-6"><label asp-for="Role" class="form-label"></label><span class="req">*</span>
+                <select asp-for="Role" class="form-select" asp-items="Model.Roles"></select>
+                <div class="form-text">Exactly one primary role per user. Role changes are audited and end the user's active sessions.</div>
+                <span asp-validation-for="Role"></span></div>
+            <div class="col-md-6"><label asp-for="ManagerId" class="form-label"></label>
+                <select asp-for="ManagerId" class="form-select" asp-items="Model.Managers"><option value="">No manager</option></select>
+                <div class="form-text">Sales Executives only — defines the Manager's team scope.</div>
+                <span asp-validation-for="ManagerId"></span></div>
+            <div class="col-md-6 d-flex align-items-end"><div class="form-check form-switch mb-2"><input asp-for="IsActive" class="form-check-input" role="switch" /><label asp-for="IsActive" class="form-check-label"></label></div></div>
+            @if (!isEdit)
+            {
+                <div class="col-12"><hr class="my-1" /><h2 class="form-section-title mt-2">Initial password</h2></div>
+                <div class="col-md-6"><label asp-for="Password" class="form-label"></label><span class="req">*</span><input asp-for="Password" class="form-control" autocomplete="new-password" /><span asp-validation-for="Password"></span></div>
+                <div class="col-md-6"><label asp-for="ConfirmPassword" class="form-label"></label><span class="req">*</span><input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" /><span asp-validation-for="ConfirmPassword"></span></div>
+                <div class="col-12"><div class="form-text mt-0">Policy: at least @p.RequiredLength characters, upper &amp; lower case, a number and a symbol.</div>
+                    <div class="form-check mt-2"><input asp-for="MustChangePassword" class="form-check-input" /><label asp-for="MustChangePassword" class="form-check-label"></label></div></div>
+            }
+        </div>
+        <div class="d-flex gap-2 mt-3"><button class="btn btn-primary" type="submit"><i class="bi bi-check-lg me-1"></i>Save user</button><a class="btn btn-light" asp-action="@(isEdit ? "Details" : "Index")" asp-route-id="@Model.Id">Cancel</a></div>
+    </div></div>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

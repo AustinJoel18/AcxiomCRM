@@ -1,0 +1,87 @@
+@model CustomerFormViewModel
+@using Microsoft.Extensions.Options
+@inject IOptions<CrmValidationOptions> V
+@{
+    var isEdit = Model.CustomerId is not null;
+    ViewData["Title"] = isEdit ? "Edit customer" : "New customer";
+}
+<div class="page-header">
+    <div>
+        <div class="crumbs"><a asp-action="Index">Customers</a> / @(isEdit ? Model.CustomerCode : "New")</div>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+</div>
+
+<form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@Model.CustomerId" method="post" novalidate>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    <div class="row g-3">
+        <div class="col-xl-8">
+            <div class="card"><div class="card-body">
+                <h2 class="form-section-title">Customer details</h2>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="CustomerName" class="form-label"></label><span class="req">*</span>
+                        <input asp-for="CustomerName" class="form-control" maxlength="100" />
+                        <span asp-validation-for="CustomerName"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="CompanyName" class="form-label"></label>
+                        <input asp-for="CompanyName" class="form-control" maxlength="150" />
+                        <span asp-validation-for="CompanyName"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Email" class="form-label"></label><span class="req">*</span>
+                        <input asp-for="Email" class="form-control" type="email" maxlength="150" placeholder="name@company.com" autocomplete="off" />
+                        <span asp-validation-for="Email"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Phone" class="form-label"></label><span class="req">*</span>
+                        <input asp-for="Phone" class="form-control" type="tel" inputmode="numeric" maxlength="15" placeholder="9876543210" />
+                        <div class="form-text">@V.Value.PhoneHint</div>
+                        <span asp-validation-for="Phone"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Address" class="form-label"></label>
+                        <input asp-for="Address" class="form-control" maxlength="250" />
+                        <span asp-validation-for="Address"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="City" class="form-label"></label>
+                        <input asp-for="City" class="form-control" maxlength="100" />
+                        <span asp-validation-for="City"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="State" class="form-label"></label>
+                        <input asp-for="State" class="form-control" maxlength="100" />
+                        <span asp-validation-for="State"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Notes" class="form-label"></label>
+                        <textarea asp-for="Notes" class="form-control" rows="3" maxlength="2000"></textarea>
+                        <span asp-validation-for="Notes"></span>
+                    </div>
+                </div>
+            </div></div>
+        </div>
+        <div class="col-xl-4">
+            <div class="card"><div class="card-body">
+                <h2 class="form-section-title">Ownership &amp; status</h2>
+                <div class="mb-3">
+                    <label asp-for="Status" class="form-label"></label><span class="req">*</span>
+                    <select asp-for="Status" class="form-select" asp-items="Ui.EnumOptions<CustomerStatus>()"></select>
+                    <span asp-validation-for="Status"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="AssignedToId" class="form-label"></label>
+                    <select asp-for="AssignedToId" class="form-select" asp-items="Model.Owners"></select>
+                    <span asp-validation-for="AssignedToId"></span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save customer</button>
+                    <a class="btn btn-light" asp-action="@(isEdit ? "Details" : "Index")" asp-route-id="@Model.CustomerId">Cancel</a>
+                </div>
+            </div></div>
+        </div>
+    </div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
